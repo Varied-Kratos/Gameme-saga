@@ -147,79 +147,79 @@ class World():
         for row in data:
             col_count = 0
             for tile in row:
-                if tile == 1:
+                if tile == 11:
                     img_rect = img_block1.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block1, img_rect]
                     self.tile_list.append(tile)
-                if tile == 2:
+                if tile == 12:
                     img_rect = img_block2.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block2, img_rect]
                     self.tile_list.append(tile)
-                if tile == 3:
+                if tile == 13:
                     img_rect = img_block3.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block3, img_rect]
                     self.tile_list.append(tile)
-                if tile == 4:
+                if tile == 14:
                     img_rect = img_block4.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block4, img_rect]
                     self.tile_list.append(tile)
-                if tile == 5:
+                if tile == 15:
                     img_rect = img_block5.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block5, img_rect]
                     self.tile_list.append(tile)
-                if tile == 6:
+                if tile == 16:
                     img_rect = img_block6.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block6, img_rect]
                     self.tile_list.append(tile)
-                if tile == 7:
+                if tile == 17:
                     img_rect = img_block7.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block7, img_rect]
                     self.tile_list.append(tile)
-                if tile == 8:
+                if tile == 18:
                     img_rect = img_block8.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block8, img_rect]
                     self.tile_list.append(tile)
-                if tile == 9:
+                if tile == 19:
                     img_rect = img_block9.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block9, img_rect]
                     self.tile_list.append(tile)
-                if tile == 10:
+                if tile == 20:
                     img_rect = img_block10.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block10, img_rect]
                     self.tile_list.append(tile)
-                if tile == 11:
+                if tile == 21:
                     img_rect = img_block11.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block11, img_rect]
                     self.tile_list.append(tile)
-                if tile == 12:
+                if tile == 22:
                     img_rect = img_block12.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
                     tile = [img_block12, img_rect]
                     self.tile_list.append(tile)
-                if tile == 20:
+                if tile == 99:
                     img_rect = img_grass1.get_rect()
                     img_rect.x = col_count * title_size
                     img_rect.y = row_count * title_size
@@ -229,44 +229,52 @@ class World():
             row_count += 1
 
     def draw(self, camera):
-
         visible_rect = pygame.Rect(camera[0], camera[1], screen_width, screen_height)
-
-        # Рисуем только видимые тайлы
         for tile in self.tile_list:
             if tile[1].colliderect(visible_rect):
                 screen.blit(tile[0], tile[1].move(-camera[0], -camera[1]))
 
-        # for tile in self.tile_list:
-        # screen.blit(tile[0], tile[1])
-        # pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
 
-
-world_data = [
-    [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-     20, 20, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 20, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 0, 0, 0, 1, 2, 3, 0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 0, 0, 0, 0, 4, 5, 6, 0, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20],
-    [20, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 20],
-    [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-     20, 20, 20]
+level_1 = [
+    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+     99, 99, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 17, 18, 19, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 99, 98, 98, 98, 98, 98, 98, 11, 12, 13, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 98, 98, 98, 11, 12, 13, 98, 14, 15, 16, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 98, 98, 98, 98, 14, 15, 16, 98, 20, 21, 22, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+     98, 98, 99],
+    [99, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+     12, 13, 99],
+    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+     99, 99, 99]
 ]
 
-world = World(world_data)
-
+world = World(level_1)
 
 def draw_button(rect, text, color):
     screen.blit(img_button, (rect.x, rect.y))
