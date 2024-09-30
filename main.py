@@ -12,33 +12,40 @@ screen_width, screen_height = 192 * 5, 108 * 5
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Gameme saga")
 
+pygame.mixer.music.load("Sound/SeMe4iDzE-Gamem.mp3")
+
 img_menu = pygame.transform.scale(pygame.image.load("images/menu.png"), (screen_width, screen_height))
 img_button = pygame.transform.scale(pygame.image.load("images/button.png"), (button_width, button_height))
-img_options = pygame.transform.scale(pygame.image.load("images/exit.png"), (100, 100))
+img_options = pygame.transform.scale(pygame.image.load("images/options.png"), (screen_height // 10, screen_height // 10))
 img_bg = pygame.transform.scale(pygame.image.load("images/BG.png"), (screen_width, screen_height))
-
 
 button_start = pygame.Rect(screen_width / 2 - button_width / 2, screen_height - button_height * 2, button_width,
                            button_height)
 button_finish = pygame.Rect(screen_width / 2 - button_width / 2, screen_height - button_height, button_width,
                             button_height)
-button_options = pygame.Rect(100, 100, 100, 100)
+button_wizard = pygame.Rect(screen_width / 2 - button_width / 2, screen_height - button_height * 2, button_width,
+                            button_height)
+button_guard = pygame.Rect(screen_width / 2 - button_width / 2, screen_height - button_height, button_width,
+                           button_height)
+button_options = pygame.Rect(0, 0, 100, 100)
 
 title_size = 12 * 5
 
+
 class Player():
-    def __init__(self, x, y, CLASS):
+    def __init__(self, x, y, character):
+        self.on_ground = False
         self.images_right = []
         self.images_left = []
         self.index = 0
         self.counter = 0
         for num in range(1, 5):
-            if CLASS == "wizard":
+            if character == "wizard":
                 img_right_wizard = pygame.transform.scale(pygame.image.load(f'Wizard/Wizard1{num}.png'), (60, 105))
                 img_left_wizard = pygame.transform.scale(pygame.image.load(f'Wizard/Wizard2{num}.png'), (60, 105))
                 self.images_right.append(img_right_wizard)
                 self.images_left.append(img_left_wizard)
-            elif CLASS == "guard":
+            elif character == "guard":
                 img_right_guard = pygame.transform.scale(pygame.image.load(f'Guard/Guard1{num}.png'), (60, 105))
                 img_left_guard = pygame.transform.scale(pygame.image.load(f'Guard/Guard2{num}.png'), (60, 105))
                 self.images_right.append(img_right_guard)
@@ -52,6 +59,7 @@ class Player():
         self.vel_y = 0
         self.jumped = False
         self.direction = 0
+
     def update(self, camera):
         dx = 0
         dy = 0
@@ -59,27 +67,27 @@ class Player():
         walk_cooldown = 5
 
         key = pygame.key.get_pressed()
-        if key[pygame.K_SPACE] and self.jumped == False:
+        if key[pygame.K_SPACE] and self.jumped == False and self.on_ground == True:
             self.vel_y = -17
             self.jumped = True
+            self.on_ground = False
         elif key[pygame.K_SPACE] == False:
             self.jumped = False
-        if key[pygame.K_LEFT]:
+        if key[pygame.K_a]:
             dx -= 5
             self.counter += 1
             self.direction = -1
-        if key[pygame.K_RIGHT]:
+        if key[pygame.K_d]:
             dx += 5
             self.counter += 1
             self.direction = 1
-        if key[pygame.K_RIGHT] == False and key[pygame.K_LEFT] == False or key[pygame.K_SPACE]:
+        if key[pygame.K_d] == False and key[pygame.K_a] == False or key[pygame.K_SPACE]:
             self.counter = 0
             self.index = 0
             if self.direction == 1:
                 self.image = self.images_right[self.index]
             if self.direction == -1:
                 self.image = self.images_left[self.index]
-
 
         if self.counter > walk_cooldown:
             self.counter = 0
@@ -106,8 +114,7 @@ class Player():
                 elif self.vel_y > 0:
                     dy = tile[1].top - self.rect.bottom
                     self.vel_y = 0
-
-
+                    self.on_ground = True
 
         self.rect.x += dx
         self.rect.y += dy
@@ -220,6 +227,7 @@ class World():
                     self.tile_list.append(tile)
                 col_count += 1
             row_count += 1
+
     def draw(self, camera):
 
         visible_rect = pygame.Rect(camera[0], camera[1], screen_width, screen_height)
@@ -229,9 +237,11 @@ class World():
             if tile[1].colliderect(visible_rect):
                 screen.blit(tile[0], tile[1].move(-camera[0], -camera[1]))
 
-        #for tile in self.tile_list:
-            #screen.blit(tile[0], tile[1])
-            # pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
+        # for tile in self.tile_list:
+        # screen.blit(tile[0], tile[1])
+        # pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
+
+
 world_data = [
     [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
      20, 20, 20],
@@ -255,8 +265,8 @@ world_data = [
      20, 20, 20]
 ]
 
-player = Player(title_size, title_size, "wizard")
 world = World(world_data)
+
 
 def draw_button(rect, text, color):
     screen.blit(img_button, (rect.x, rect.y))
@@ -265,33 +275,66 @@ def draw_button(rect, text, color):
     text_rect = text_surface.get_rect(center=rect.center)
     screen.blit(text_surface, text_rect)
 
+
 def options(running):
-    running = False
+    while running:
+        screen.blit(img_menu, (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_finish.collidepoint(event.pos):
+                    running = False
+        # draw_button(button_start, "Продолжить", (0, 0, 0))
+        draw_button(button_finish, "Выход", (0, 0, 0))
+        pygame.display.flip()
     return running
-def game_loop(running):
+
+
+def game_loop(running, character):
+    player = Player(title_size, title_size, character)
     camera = [0, 0]
+    pygame.mixer.music.play(-1)
     while running:
 
         clock.tick(fps)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_x, mouse_y = event.pos
-                if 0 < mouse_x < 100 and 0 < mouse_y < 100:
-                    print("Выход")
+                if button_options.collidepoint(event.pos):
                     running = options(running)
 
         screen.blit(img_bg, (0, 0))
+        screen.blit(img_options, (0, 0))
 
         world.draw(camera)
 
         camera = player.update(camera)
 
-        screen.blit(img_options, (0, 0))
         pygame.display.flip()
     return running
+
+
+def choose_character(running):
+    while running:
+        screen.blit(img_menu, (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_wizard.collidepoint(event.pos):
+                    running = game_loop(running, "wizard")
+                elif button_guard.collidepoint(event.pos):
+                    running = game_loop(running, "guard")
+        draw_button(button_wizard, "Маг", (0, 0, 0))
+        draw_button(button_guard, "Рыцарь ", (0, 0, 0))
+        pygame.display.flip()
+    return running
+
+
 def main():
     running = True
     while running:
@@ -301,14 +344,14 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_start.collidepoint(event.pos):
-                    print("Кнопка Играть нажата!")
-                    running = game_loop(running)
+                    running = choose_character(running)
+                    # running = game_loop(running, "wizard")
                 elif button_finish.collidepoint(event.pos):
-                    print("Кнопка Выход нажата!")
                     running = False
         draw_button(button_start, "Играть", (0, 0, 0))
         draw_button(button_finish, "Выход", (0, 0, 0))
         pygame.display.flip()
+
 
 if __name__ == "__main__":
     main()
