@@ -316,9 +316,9 @@ def game_loop(running, character):
                     running = options(running)
 
         screen.blit(img_bg, (0, 0))
-        screen.blit(img_options, (0, 0))
 
         world.draw(camera)
+        screen.blit(img_options, (0, 0))
 
         camera = player.update(camera)
 
