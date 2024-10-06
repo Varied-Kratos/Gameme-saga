@@ -1,11 +1,10 @@
 import pygame
 import sys
 
-
 pygame.init()
 
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1080, 720
 GRID_SIZE = 50  
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Level Builder")
@@ -17,6 +16,9 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
 
+bg = pygame.image.load("Images/BG.png")  
+bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))  
+
 class Sprite:
     def __init__(self, x, y, color):
         self.rect = pygame.Rect(x, y, GRID_SIZE, GRID_SIZE)
@@ -24,7 +26,6 @@ class Sprite:
 
     def draw(self, surface):
         pygame.draw.rect(surface, self.color, self.rect)
-
 
 class Level:
     def __init__(self):
@@ -46,12 +47,12 @@ class Level:
             for row in grid:
                 f.write(' '.join(row) + '\n')
 
-
 clock = pygame.time.Clock()
 level = Level()
 current_color = GREEN
+RUN = True
 
-while True:
+while RUN:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -75,10 +76,13 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s: 
                 level.save_to_file("level.txt")
+            if event.key == pygame.K_ESCAPE:
+                RUN = False
 
-    screen.fill(WHITE)
+    screen.blit(bg, (0, 0))
+
+
     level.draw(screen)
-
 
     for x in range(0, WIDTH, GRID_SIZE):
         pygame.draw.line(screen, (200, 200, 200), (x, 0), (x, HEIGHT))
@@ -92,3 +96,4 @@ while True:
     pygame.display.flip()
     clock.tick(60)
 
+pygame.quit()
