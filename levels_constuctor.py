@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import time
+from tkinter import Tk, filedialog
 
 pygame.init()
 
@@ -22,40 +23,17 @@ GREEN = (0, 255, 0)
 bg = pygame.image.load("Images/BG.png")
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
-# Создание изображений для старта и финиша в виде прямоугольников
 start_image = pygame.Surface((CELL_WIDTH, CELL_HEIGHT))
 start_image.fill(GREEN)
 finish_image = pygame.Surface((CELL_WIDTH, CELL_HEIGHT))
 finish_image.fill(RED)
-
-def show_message_box(message):
-    root = pygame.display.set_mode((400, 200))
-    pygame.display.set_caption("Предупреждение")
-    font = pygame.font.Font(None, 36)
-    input_box = pygame.Rect(50, 50, 300, 100)
-    button_box = pygame.Rect(100, 150, 200, 40)
-    color = pygame.Color('lightskyblue3')
-    done = False
-    while not done:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if button_box.collidepoint(event.pos):
-                    done = True
-        root.fill((30, 30, 30))
-        txt_surface = font.render(message, True, color)
-        root.blit(txt_surface, (input_box.x + 10, input_box.y + 30))
-        pygame.draw.rect(root, color, input_box, 2)
-        pygame.draw.rect(root, color, button_box)
-        button_text = font.render("Закрыть предупреждение", True, (0, 0, 0))
-        root.blit(button_text, (button_box.x + 10, button_box.y + 5))
-        pygame.display.flip()
-        clock.tick(30)
-    pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("Level Builder")
-
+def load_images_from_folder(folder):
+    images = {}
+    for filename in os.listdir(folder):
+        if filename.endswith(".png"):
+            img = pygame.image.load(os.path.join(folder, filename)).convert_alpha()
+            images[filename[:2]] = img  
+    return images
 class Sprite:
     def __init__(self, x, y, image, designation):
         self.image = pygame.transform.scale(image, (CELL_WIDTH, CELL_HEIGHT))
@@ -71,7 +49,15 @@ class Level:
         self.start_set = False
         self.finish_set = False
 
+    def clear(self):
+        self.sprites.clear()
+        self.start_set = False
+        self.finish_set = False
+
+
     def add_sprite(self, x, y, image, designation):
+        self.remove_sprite((x * CELL_WIDTH, y * CELL_HEIGHT))
+
         if designation == "S":
             self.start_set = True
         elif designation == "F":
@@ -80,7 +66,7 @@ class Level:
         self.sprites.append(new_sprite)
 
     def remove_sprite(self, pos):
-        for sprite in self.sprites[:]:  # Create a copy of the list for safe iteration
+        for sprite in self.sprites[:]:
             if sprite.rect.collidepoint(pos):
                 if sprite.designation == "S":
                     self.start_set = False
@@ -98,8 +84,7 @@ class Level:
         if not self.start_set or not self.finish_set:
             self.show_save_warning()
             return
-
-        grid = [['.' for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
+        grid = [['..' for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
         for sprite in self.sprites:
             grid[sprite.rect.y // CELL_HEIGHT][sprite.rect.x // CELL_WIDTH] = sprite.designation
         with open(filename, 'w') as f:
@@ -110,79 +95,120 @@ class Level:
         warning_surface = pygame.Surface((400, 200))
         warning_surface.fill((255, 255, 255))
         font = pygame.font.Font(None, 36)
-        
-        # Разделение текста на несколько строк и выравнивание по центру
-        message_lines = [
-            "Файл не может быть",
-            "сохранен, пока в нем",
-            "нет старта и финиша"
-        ]
-        
-        y_offset = 40  # Расположение текста чуть выше
+        message_lines = ["Файл не может быть", "сохранен, пока в нем", "нет старта и финиша"]
+        y_offset = 40
         for line in message_lines:
             text_surface = font.render(line, True, (255, 0, 0))
             text_rect = text_surface.get_rect(center=(200, y_offset))
             warning_surface.blit(text_surface, text_rect)
-            y_offset += 40  # Смещение для следующей строки
-
+            y_offset += 40
         warning_shown = True
         start_time = time.time()
         while warning_shown:
             screen.blit(warning_surface, (WIDTH // 2 - 200, HEIGHT // 2 - 100))
             pygame.display.flip()
-
-            # Проверка прошедшего времени
-            if time.time() - start_time > 1.5:
+            if time.time() - start_time > 3:
                 warning_shown = False
-            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-
             clock.tick(30)
 
-
-
-
-
-
-
-    def clear(self):
-        self.sprites.clear()
-        self.start_set = False
-        self.finish_set = False
-
-
-
-def load_images_from_folder(folder):
-    images = {}
-    for filename in os.listdir(folder):
-        if filename.endswith(".png"):
-            img = pygame.image.load(os.path.join(folder, filename)).convert_alpha()
-            images[filename[:2]] = img  # Use first two digits of filename
-    return images
-clock = pygame.time.Clock()
-level = Level()
-images = load_images_from_folder("Tile")
-current_image = None
-current_designation = "00"
-RUN = True
-menu_visible = False
-instructions_visible = True
-scroll_y = 0
-dragging = False
-
-# Спрайты, разделенные на категории
 sprite_categories = {
     "Блоки": load_images_from_folder("Tile"),
     "Ловушки": load_images_from_folder("Trap"),
     "Враги": load_images_from_folder("Enemy"),
     "Начало/Конец": {"S": start_image, "F": finish_image}
 }
+level=Level()
+def show_message_box(message):
+    root = pygame.display.set_mode((400, 200))
+    pygame.display.set_caption("Предупреждение")
+    font = pygame.font.Font(None, 36)
+    input_box = pygame.Rect(50, 50, 300, 100)
+    color = pygame.Color('lightskyblue3')
+    done = False
+    while not done:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                done = True
+        root.fill((30, 30, 30))
+        txt_surface = font.render(message, True, color)
+        root.blit(txt_surface, (input_box.x + 10, input_box.y + 30))
+        pygame.draw.rect(root, color, input_box, 2)
+        pygame.display.flip()
+        clock.tick(30)
+    pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+    pygame.display.set_caption("Level Builder")
 
 
-current_category = "Блоки"
+def main_menu():
+    menu_running = True
+    while menu_running:
+        screen.fill(WHITE)
+        font = pygame.font.Font(None, 74)
+        title_surface = font.render("Главное меню", True, BLACK)
+        screen.blit(title_surface, (WIDTH // 2 - title_surface.get_width() // 2, HEIGHT // 4))
+        font_buttons = pygame.font.Font(None, 56)
+        edit_button = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 - 50, 300, 75)
+        new_button = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 50, 300, 75)
+        pygame.draw.rect(screen, (0, 0, 255), edit_button)
+        pygame.draw.rect(screen, (0, 0, 255), new_button)
+        edit_text = font_buttons.render("Редактировать", True, WHITE)
+        new_text = font_buttons.render("Создать новый", True, WHITE)
+        screen.blit(edit_text, (edit_button.x + (edit_button.width - edit_text.get_width()) // 2, edit_button.y + (edit_button.height - edit_text.get_height()) // 2))
+        screen.blit(new_text, (new_button.x + (new_button.width - new_text.get_width()) // 2, new_button.y + (new_button.height - new_text.get_height()) // 2))
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if edit_button.collidepoint(event.pos):
+                    menu_running = False
+                    load_level()
+                elif new_button.collidepoint(event.pos):
+                    menu_running = False
+                    return
+
+
+def load_level():
+    root = Tk()
+    root.withdraw()  
+    file_path = filedialog.askopenfilename(title="Выберите файл уровня", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+    root.destroy()
+
+    if file_path:
+        load_level_from_file(file_path)
+    else:
+        print("Файл не выбран")
+
+
+def load_level_from_file(filename):
+    try:
+        with open(filename, 'r') as f:
+            grid = [line.strip().split() for line in f.readlines()]
+        level.clear() 
+        for y, row in enumerate(grid):
+            for x, cell in enumerate(row):
+                if cell != '..':  
+                    if cell in sprite_categories["Начало/Конец"]:
+                        image = sprite_categories["Начало/Конец"][cell]
+                        level.add_sprite(x, y, image, cell)
+                    else:
+                        for category in sprite_categories:
+                            if cell in sprite_categories[category]:
+                                image = sprite_categories[category][cell]
+                                level.add_sprite(x, y, image, cell)
+    except FileNotFoundError:
+        level.show_save_warning()
+
+
+
 
 def get_filename():
     root = pygame.display.set_mode((400, 200))
@@ -229,6 +255,20 @@ def get_filename():
     pygame.display.set_caption("Level Builder")
     return text
 
+clock = pygame.time.Clock()
+level = Level()
+images = load_images_from_folder("Tile")
+current_image = None
+current_designation = "00"
+RUN = True
+menu_visible = False
+instructions_visible = True
+scroll_y = 0
+dragging = False
+current_category = "Блоки"
+
+main_menu()
+
 
 while RUN:
     keys = pygame.key.get_pressed()
@@ -242,6 +282,9 @@ while RUN:
                     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
                 else:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                bg = pygame.image.load("Images/BG.png")
+                bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
+
             if event.key == pygame.K_m:
                 menu_visible = not menu_visible
             if event.key == pygame.K_i:
@@ -258,14 +301,13 @@ while RUN:
                 level.clear()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # Обработка клика по кнопкам категорий
             if menu_visible:
                 categories = list(sprite_categories.keys())
                 for i, category in enumerate(categories):
                     category_rect = pygame.Rect(10, 60 + i * 40, 140, 30)
                     if category_rect.collidepoint(event.pos):
                         current_category = category
-                        scroll_y = 0  # Сбросить прокрутку при смене категории
+                        scroll_y = 0  
                         break
 
             selected_sprites = sprite_categories[current_category]
@@ -277,17 +319,16 @@ while RUN:
 
             if event.button == 1 and current_image is not None:
                 pos = event.pos
-                if not menu_visible or pos[0] > 160:  # Ensure click is outside menu area
+                if not menu_visible or pos[0] > 160:  
                     grid_x = int(pos[0] // CELL_WIDTH)
                     grid_y = int(pos[1] // CELL_HEIGHT)
                     level.add_sprite(grid_x, grid_y, current_image, current_designation)
                     if keys[pygame.K_LSHIFT]:
                         dragging = True
-            if event.button == 3:  # Удаление спрайта при правом клике
+            elif event.button == 3:  
                 pos = event.pos
-                if not menu_visible or pos[0] > 160:  # Ensure click is outside menu area
+                if not menu_visible or pos[0] > 160: 
                     level.remove_sprite(pos)
-
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             dragging = False
@@ -345,6 +386,8 @@ while RUN:
             "Shift(удерж.) + ЛКМ - Заполнить соседние клетки",
             "Ctrl + D - Удалить все спрайты",
             "Right Click - Удалить спрайт",
+            "Ctrl + 1 - Установить старт",
+            "Ctrl + 2 - Установить финиш"
         ]
         for i, instruction in enumerate(instructions):
             instruction_surface = font.render(instruction, True, WHITE)
