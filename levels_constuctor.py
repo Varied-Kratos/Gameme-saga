@@ -56,14 +56,22 @@ class Level:
 
 
     def add_sprite(self, x, y, image, designation):
-        self.remove_sprite((x * CELL_WIDTH, y * CELL_HEIGHT))
+        if 0 <= x < COLUMN_COUNT and 0 <= y < ROW_COUNT:
+            existing_sprite = next((s for s in self.sprites if s.rect.topleft == (x * CELL_WIDTH, y * CELL_HEIGHT)), None)
+            if existing_sprite:
+                if existing_sprite.designation == "S" and designation != "S":
+                    self.start_set = False
+                if existing_sprite.designation == "F" and designation != "F":
+                    self.finish_set = False
+                self.sprites.remove(existing_sprite)
+            
+            if designation == "S":
+                self.start_set = True
+            elif designation == "F":
+                self.finish_set = True
 
-        if designation == "S":
-            self.start_set = True
-        elif designation == "F":
-            self.finish_set = True
-        new_sprite = Sprite(x, y, image, designation)
-        self.sprites.append(new_sprite)
+            new_sprite = Sprite(x, y, image, designation)
+            self.sprites.append(new_sprite)
 
     def remove_sprite(self, pos):
         for sprite in self.sprites[:]:
@@ -76,6 +84,7 @@ class Level:
                 break
 
 
+
     def draw(self, surface):
         for sprite in self.sprites:
             sprite.draw(surface)
@@ -86,10 +95,15 @@ class Level:
             return
         grid = [['..' for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
         for sprite in self.sprites:
-            grid[sprite.rect.y // CELL_HEIGHT][sprite.rect.x // CELL_WIDTH] = sprite.designation
+            grid_x = sprite.rect.x // CELL_WIDTH
+            grid_y = sprite.rect.y // CELL_HEIGHT
+            if 0 <= grid_x < COLUMN_COUNT and 0 <= grid_y < ROW_COUNT:
+                grid[grid_y][grid_x] = sprite.designation
         with open(filename, 'w') as f:
             for row in grid:
                 f.write(' '.join(row) + '\n')
+
+
 
     def show_save_warning(self):
         warning_surface = pygame.Surface((400, 200))
