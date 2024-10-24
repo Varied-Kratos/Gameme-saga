@@ -369,7 +369,7 @@ while RUN:
     menu_button_rect = pygame.Rect(WIDTH - 150, 10, 140, 40)
     pygame.draw.rect(screen, BLACK if not menu_visible else WHITE, menu_button_rect)
     font = pygame.font.Font(None, 36)
-    button_text = font.render("Menu (press M)", True, WHITE if not menu_visible else BLACK)
+    button_text = font.render("Menu", True, WHITE if not menu_visible else BLACK)
     screen.blit(button_text, (WIDTH - 140, 15))
 
     if menu_visible:
@@ -400,8 +400,7 @@ while RUN:
             "Shift(удерж.) + ЛКМ - Заполнить соседние клетки",
             "Ctrl + D - Удалить все спрайты",
             "Right Click - Удалить спрайт",
-            "Ctrl + 1 - Установить старт",
-            "Ctrl + 2 - Установить финиш"
+            
         ]
         for i, instruction in enumerate(instructions):
             instruction_surface = font.render(instruction, True, WHITE)
