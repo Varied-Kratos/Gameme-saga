@@ -5,22 +5,26 @@ pygame.init()
 clock = pygame.time.Clock()
 fps = 60
 
+with open("Levels/level_1.txt", "r") as l1:
+    level_1 = [list(map(str, line.split())) for line in l1]
+with open("Levels/level_2.txt", "r") as l2:
+    level_2 = [list(map(str, line.split())) for line in l2]
+
 map_width, map_height = 192 * 10, 108 * 10
 screen_width, screen_height = 192 * 8, 108 * 8
 button_width, button_height = 200, 100
+tile_size = 60
 
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Gameme saga")
+pygame.display.set_caption("Gamem saga")
 
 pygame.mixer.music.load("Sound/SeMe4iDzE-Gamem.mp3")
 
 img_menu = pygame.transform.scale(pygame.image.load("images/menu.png"), (screen_width, screen_height))
 img_bg = pygame.transform.scale(pygame.image.load("images/BG.png"), (screen_width, screen_height))
 
-tile_size = 60
 
-
-class Button():
+class Button:
     def __init__(self, x, y, button_type):
         self.button_type = button_type
         if button_type == "text_button":
@@ -40,8 +44,49 @@ class Button():
             screen.blit(text_surface, text_rect)
 
 
-class Player():
+class Spell:
+    def __init__(self, x, y, direction, character):
+        if character == "wizard":
+            if direction == -1:
+                self.image = pygame.transform.flip(pygame.transform.scale(pygame.image.load("Wizard/Spell.png"), (tile_size, tile_size)), True, False)
+            elif direction == 1:
+                self.image = pygame.transform.scale(pygame.image.load("Wizard/Spell.png"), (tile_size, tile_size))
+        elif character == "guard":
+            if direction == -1:
+                self.image = pygame.transform.flip(pygame.transform.scale(pygame.image.load("Guard/Sword_swing.png"), (tile_size, tile_size)), True, False)
+            elif direction == 1:
+                self.image = pygame.transform.scale(pygame.image.load("Guard/Sword_swing.png"), (tile_size, tile_size))
+        self.speed = 1
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        self.direction = direction
+        self.counter = 0
+
+    def collision(self):
+        for tile in world.tile_list:
+            if tile.rect.colliderect(self.rect.x, self.rect.y, self.width, self.height):
+                return True
+        return False
+
+    def update(self, camera):
+        self.counter += 1
+        self.rect.x += self.speed * self.direction
+        self.speed += 0.4
+
+        for enemy in world.enemy_list:
+            if enemy.rect.colliderect(self.rect.x, self.rect.y, self.rect.width, self.rect.height):
+                enemy.alive = False
+        screen.blit(self.image, (self.rect.x - camera[0], self.rect.y - camera[1]))
+
+
+class Player:
     def __init__(self, x, y, character):
+        self.spells = []
+        self.last_shot_time = 0
+        self.shot_delay = 500
         self.on_ground = False
         self.images_right = []
         self.images_left = []
@@ -66,10 +111,15 @@ class Player():
         self.height = self.image.get_height()
         self.vel_y = 0
         self.jumped = False
-        self.direction = 0
+        self.direction = 1
 
-    def update(self, camera, game_over, pause):
+    def update(self, camera, game_over, finish, pause, character):
         if not game_over and not pause:
+            for spell in self.spells:
+                if spell.counter < 100 and not spell.collision():
+                    spell.update(camera)
+                else:
+                    self.spells.remove(spell)
             dx = 0
             dy = 0
 
@@ -86,10 +136,21 @@ class Player():
                 dx -= 5
                 self.counter += 1
                 self.direction = -1
-            if key[pygame.K_d]:
+            elif key[pygame.K_d]:
                 dx += 5
                 self.counter += 1
                 self.direction = 1
+            if key[pygame.K_k]:
+                current_time = pygame.time.get_ticks()
+                if current_time - self.last_shot_time >= self.shot_delay:
+                    if self.direction == -1:
+                        spell = Spell(self.rect.x - tile_size, self.rect.centery - tile_size // 2, self.direction, character)
+                        self.spells.append(spell)
+                        self.last_shot_time = current_time
+                    elif self.direction == 1:
+                        spell = Spell(self.rect.x + tile_size, self.rect.centery - tile_size // 2, self.direction, character)
+                        self.spells.append(spell)
+                        self.last_shot_time = current_time
             if not key[pygame.K_d] and not key[pygame.K_a] or key[pygame.K_SPACE]:
                 self.counter = 0
                 self.index = 0
@@ -124,9 +185,12 @@ class Player():
                         dy = tile.rect.top - self.rect.bottom
                         self.vel_y = 0
                         self.on_ground = True
+            if len(world.environment_list):
+                if world.environment_list[1].rect.colliderect(self.rect.x, self.rect.y, self.width, self.height):
+                    finish = True
 
             for enemy in world.enemy_list:
-                if enemy.rect.colliderect(self.rect.x, self.rect.y, self.width, self.height):
+                if enemy.alive and enemy.rect.colliderect(self.rect.x, self.rect.y, self.width, self.height):
                     game_over = True
             for trap in world.trap_list:
                 if trap.rect.colliderect(self.rect.x, self.rect.y, self.width, self.height):
@@ -138,17 +202,18 @@ class Player():
             self.rect.y += dy
 
         else:
-            self.image = pygame.image.load("Enemy/Ghost.png")
+            self.image = pygame.transform.scale(pygame.image.load("images/Dead.png"), (tile_size * 2, tile_size * 2))
             if self.rect.y > map_height // 4:
                 self.rect.y -= 5
 
         screen.blit(self.image, (self.rect.x - camera[0], self.rect.y - camera[1]))
         camera[0], camera[1] = self.rect.x - screen_width // 2 + tile_size, self.rect.y - screen_height // 2
-        return camera, pause, game_over
+        return camera, game_over, finish, pause
 
 
-class World():
+class World:
     def __init__(self, data):
+        global start_x, start_y
         self.tile_list = []
         self.enemy_list = []
         self.trap_list = []
@@ -157,18 +222,23 @@ class World():
         for row in data:
             col_count = 0
             for something in row:
-                if 10 <= something <= 24:
-                    tile = Tile(col_count * tile_size, row_count * tile_size, something)
-                    self.tile_list.append(tile)
-                if 40 <= something <= 49:
-                    environment = Environment(col_count * tile_size, row_count * tile_size, something)
-                    self.environment_list.append(environment)
-                if something == 90:
-                    enemy = Enemy(col_count * tile_size, row_count * tile_size)
-                    self.enemy_list.append(enemy)
-                if something == 50:
-                    trap = Trap(col_count * tile_size, row_count * tile_size)
-                    self.trap_list.append(trap)
+                try:
+                    something = int(something)
+                    if 10 <= something <= 24:
+                        tile = Tile(col_count * tile_size, row_count * tile_size, something)
+                        self.tile_list.append(tile)
+                except ValueError:
+                    if something == 'Tr':
+                        trap = Trap(col_count * tile_size, row_count * tile_size)
+                        self.trap_list.append(trap)
+                    if something == 'Gh':
+                        enemy = Enemy(col_count * tile_size, row_count * tile_size)
+                        self.enemy_list.append(enemy)
+                    if something == 'S' or something == 'F':
+                        if something == 'S':
+                            start_x, start_y = col_count * tile_size, row_count * tile_size
+                        environment = Environment(col_count * tile_size, row_count * tile_size, something)
+                        self.environment_list.append(environment)
                 col_count += 1
             row_count += 1
 
@@ -178,7 +248,7 @@ class World():
             if tile.rect.colliderect(visible_rect):
                 screen.blit(tile.image, tile.rect.move(-camera[0], -camera[1]))
         for enemy in self.enemy_list:
-            if enemy.rect.colliderect(visible_rect):
+            if enemy.alive and enemy.rect.colliderect(visible_rect):
                 enemy.update(camera)
         for trap in self.trap_list:
             if trap.rect.colliderect(visible_rect):
@@ -188,12 +258,13 @@ class World():
                 screen.blit(environment.image, environment.rect.move(-camera[0], -camera[1]))
 
 
-class Enemy():
+class Enemy:
     def __init__(self, x, y):
         self.image = pygame.transform.scale(pygame.image.load("Enemy/Ghost.png"), (tile_size, tile_size))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.alive = True
         self.move_direction = 1
         self.move_counter = 0
 
@@ -210,7 +281,7 @@ class Enemy():
                         (self.rect.x - camera[0], self.rect.y - camera[1]))
 
 
-class Trap():
+class Trap:
     def __init__(self, x, y):
         self.image = pygame.transform.scale(pygame.image.load("Trap/Trap.png"), (tile_size, tile_size))
         self.rect = self.image.get_rect()
@@ -218,7 +289,7 @@ class Trap():
         self.rect.y = y
 
 
-class Tile():
+class Tile:
     def __init__(self, x, y, number_of_tile):
         self.image = pygame.transform.scale(pygame.image.load(f"tile/{number_of_tile}.png"), (tile_size, tile_size))
         self.rect = self.image.get_rect()
@@ -226,57 +297,19 @@ class Tile():
         self.rect.y = y
 
 
-class Environment():
+class Environment:
     def __init__(self, x, y, number_of_tile):
-        if number_of_tile == 40:
-            self.image = pygame.transform.scale(pygame.image.load("Environment/Tree.png"), (180, 288))
+        if number_of_tile == 'S':
+            self.image = pygame.image.load("Environment/Start.png")
             self.rect = self.image.get_rect()
-            self.rect.x = x - self.image.get_size()[0] // 2 + tile_size
-            self.rect.y = y - self.image.get_size()[1] + tile_size
+            self.rect.x = x
+            self.rect.y = y
+        elif number_of_tile == 'F':
+            self.image = pygame.image.load("Environment/Portal.png")
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = y - tile_size
 
-
-level_1 = [
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [99, 99, 99, 99, 99, 99, 99, 99, 99, 90, 99, 99, 50, 99, 99, 50, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99],
-    [11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-     12, 12, 13],
-]
-
-world = World(level_1)
 
 button_exit = Button(screen_width // 2 - button_width // 2, screen_height - button_height, "text_button")
 button_start = Button(screen_width // 2 - button_width // 2, screen_height - button_height * 2, "text_button")
@@ -284,6 +317,8 @@ button_continue = Button(screen_width // 2 - button_width // 2, screen_height - 
 button_restart = Button(screen_width // 2 - button_width // 2, screen_height - button_height * 3, "text_button")
 button_wizard = Button(screen_width // 2 - button_width // 2, screen_height - button_height * 2, "text_button")
 button_guard = Button(screen_width // 2 - button_width // 2, screen_height - button_height, "text_button")
+button_level1 = Button(screen_width // 2 - button_width // 2, screen_height - button_height * 2, "text_button")
+button_level2 = Button(screen_width // 2 - button_width // 2, screen_height - button_height, "text_button")
 button_options = Button(0, 0, "options")
 
 
@@ -308,10 +343,13 @@ def options(running, wanna_restart, pause):
     return running, wanna_restart, pause
 
 
-def game_loop(running, character):
-    player = Player(tile_size * 4, map_height - tile_size, character)
+def game_loop(running, character, level):
+    global world
+    world = World(level)
+    player = Player(start_x, start_y, character)
     camera = [0, 0]
     game_over = False
+    finish = False
     pause = False
     pygame.mixer.music.play(-1)
     while running:
@@ -327,28 +365,66 @@ def game_loop(running, character):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if game_over and button_restart.rect.collidepoint(event.pos):
+                    for enemy in world.enemy_list:
+                        enemy.alive = True
+                    pygame.mixer.music.stop()
                     return running
                 if button_options.rect.collidepoint(event.pos):
                     pause = True
                     wanna_restart = False
                     running, wanna_restart, pause = options(running, wanna_restart, pause)
                     if wanna_restart:
+                        for enemy in world.enemy_list:
+                            enemy.alive = True
+                        pygame.mixer.music.stop()
                         return running
             elif event.type == pygame.KEYDOWN:
+                if game_over and button_restart.rect.collidepoint(event.pos):
+                    for enemy in world.enemy_list:
+                        enemy.alive = True
+                    pygame.mixer.music.stop()
+                    return running
                 if event.key == pygame.K_ESCAPE:
                     pause = True
                     wanna_restart = False
                     running, wanna_restart, pause = options(running, wanna_restart, pause)
                     if wanna_restart:
+                        for enemy in world.enemy_list:
+                            enemy.alive = True
+                        pygame.mixer.music.stop()
                         return running
         if game_over:
             pause = True
             button_restart.draw_button("Рестарт")
 
-        camera, game_over, pause = player.update(camera, game_over, pause)
+        camera, game_over, finish, pause = player.update(camera, game_over, finish, pause, character)
+
+        if finish:
+            for enemy in world.enemy_list:
+                enemy.alive = True
+            pygame.mixer.music.stop()
+            return running
 
         button_options.draw_button("Настройки")
 
+        pygame.display.update()
+    return running
+
+
+def choose_level(running, character):
+    while running:
+        screen.blit(img_menu, (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_level1.rect.collidepoint(event.pos):
+                    running = game_loop(running, character, level_1)
+                elif button_level2.rect.collidepoint(event.pos):
+                    running = game_loop(running, character, level_2)
+
+        button_level1.draw_button("Уровень 1")
+        button_level2.draw_button("Уровень 2")
         pygame.display.update()
     return running
 
@@ -361,13 +437,13 @@ def choose_character(running):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_wizard.rect.collidepoint(event.pos):
-                    running = game_loop(running, "wizard")
+                    running = choose_level(running, "wizard")
                 elif button_guard.rect.collidepoint(event.pos):
-                    running = game_loop(running,"guard")
+                    running = choose_level(running,"guard")
 
         button_wizard.draw_button("Маг")
         button_guard.draw_button("Рыцарь")
-        pygame.display.flip()
+        pygame.display.update()
     return running
 
 
@@ -385,7 +461,7 @@ def main():
                     running = False
         button_start.draw_button("Играть")
         button_exit.draw_button("Выход")
-        pygame.display.flip()
+        pygame.display.update()
 
 
 if __name__ == "__main__":
